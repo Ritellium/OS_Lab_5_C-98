@@ -129,9 +129,11 @@
   <ItemGroup>
     <ClCompile Include="..\Employee_functions.cpp" />
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="Client_class.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Employee.h" />
+    <ClInclude Include="Client_class.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -17,77 +17,53 @@ employee::employee(int new_num, char new_name[], double new_hours) : num(0), hou
 	hours = new_hours;
 }
 
-employee::employee(employee& emp) : num(emp.num), hours(emp.hours)
+employee::employee(employee const& emp) : num(emp.num), hours(emp.hours)
 {
 	strcpy_s(name, _countof(name), emp.name);
 }
 
 void employee::input() // read from console
 {
-	char name_scan[10];
 	printf("input number: ");
 	scanf_s("%d", &num);
 	printf("input name: ");
-	scanf_s("%s", &name_scan, 10);
-	strcpy_s(name, _countof(name), name_scan);
+	scanf_s("%s", &name, name_len);
 	printf("input hours: ");
 	scanf_s("%lf", &hours);
 }
 
 void employee::output() // write to console
 {
-	printf_s("%d", num);
-	printf_s(" ");
-	printf_s("%s", &name);
-	printf_s(" ");
-	printf_s("%f", hours);
-	printf_s(" ");
+	printf_s("%d ", num);
+	printf_s("%s ", &name);
+	printf_s("%f ", hours);
 }
 
-void employee::input_file(FILE* file) // mode rb - binary write, mode r - text write
+void employee::input_file_bin(FILE* file) // mode rb - binary read
 {
-	fread(&num, sizeof(int), 1, file);
-
-	int length = 0;
-	fread(&length, sizeof(int), 1, file);
-	for (int i = 0; i < length; i++)
-	{
-		fread(&name[i], sizeof(char), 1, file);
-	}
-	fread(&hours, sizeof(double), 1, file);
+	fread(this, sizeof(employee), 1, file);
 }
 
-void employee::output_file(FILE* file) // mode wb - binary write, mode w - text write
+void employee::output_file_bin(FILE* file) const // mode wb - binary write
 {
-	fwrite(&num, sizeof(int), 1, file);
-
-	int length = strlen(name) + 1;
-	fwrite(&length, sizeof(int), 1, file);
-	for (int i = 0; i < length; i++)
-	{
-		fwrite(&name[i], sizeof(char), 1, file);
-	}
-	fwrite(&hours, sizeof(double), 1, file);
-}
-
-void employee::output_file_txt(FILE* file)
-{
-	fprintf_s(file, "%d", num);
-	fprintf_s(file, " ");
-	fprintf_s(file, "%s", &name);
-	fprintf_s(file, "\n");
-	fprintf_s(file, "%f", hours);
-	fprintf_s(file, " ");
+	fwrite(this, sizeof(employee), 1, file);
 }
 
 void employee::input_file_txt(FILE* file)
 {
 	fscanf_s(file, "%d", &num);
-	fscanf_s(file, "%s", &name, 11);
+	fscanf_s(file, "%s", &name, name_len);
 	fscanf_s(file, "%lf", &hours);
 }
 
-employee& employee::operator = (employee& sourse)
+void employee::output_file_txt(FILE* file) const
+{
+	fprintf_s(file, "%d ", num);
+	fprintf_s(file, "%s ", &name);
+	fprintf_s(file, "%f ", hours);
+}
+
+employee& employee::operator = (employee const& sourse)
 {
 	if (this == &sourse)
 	{
@@ -106,30 +82,19 @@ employee& employee::operator = (employee& sourse)
 
 using namespace MyFunctions;
 
-void MyFunctions::sendMessage(FILE* file, const char* message)
+void MyFunctions::readRecord(FILE* file, int recordNum, employee& result)
 {
-	int length = strlen(message) + 1;
-	fwrite(&length, sizeof(length), 1, file);
-	for (int i = 0; i < length; i++)
-	{
-		fwrite(&message[i], sizeof(char), 1, file);
-	}
+	fseek(file, recordNum * sizeof(employee), SEEK_SET);
+	fread(&result, sizeof(employee), 1, file);
 }
 
-void MyFunctions::readMessage(FILE* file, char* readHere)
+void MyFunctions::overrideRecord(FILE* file, int recordNum, employee const& newRecord)
 {
-	int length = 0;
-	fread(&length, sizeof(length), 1, file);
-	char* destination = new char[length];
-	for (int i = 0; i < length; i++)
-	{
-		fread(&destination[i], sizeof(char), 1, file);
-	}
-	strcpy(readHere, destination);
-	delete[] destination;
+	fseek(file, recordNum * sizeof(employee), SEEK_SET);
+	fwrite(&newRecord, sizeof(employee), 1, file);
 }
 
-bool MyFunctions::all_zero(const int* threads, int emount)
+bool MyFunctions::all_zero(const bool* threads, int emount)
 {
 	for (size_t i = 0; i < emount; i++)
 	{
@@ -140,3 +105,15 @@ bool MyFunctions::all_zero(const int* threads, int emount)
 	}
 	return true;
 } // Function checks if all threads are stopped. If yes -- returns true. else -- false
+
+int MyFunctions::find_by_number(const employee* records, int size, int number)
+{
+	for (int i = 0; i < size; i++)
+	{
+		if (records[i].num == number)
+		{
+			return i;
+		}
+	}
+	return -1;
+}

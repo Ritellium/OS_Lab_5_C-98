@@ -5,19 +5,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define ERROR_FILE_OPEN -3
+constexpr int name_len = 10;
 
 struct employee
 {
 	int num;
-	char name[10];
+	char name[name_len];
 	double hours;
 
 	employee();
 
 	employee(int new_num, char new_name[], double new_hours);
 
-	employee(employee& emp);
+	employee(employee const& emp);
 
 	~employee() = default;
 
@@ -25,22 +25,24 @@ struct employee
 
 	void output();
 
-	void output_file(FILE* file);
+	void input_file_bin(FILE* file);
 
-	void input_file(FILE* file);
-
-	void output_file_txt(FILE* file);
+	void output_file_bin(FILE* file) const;
 
 	void input_file_txt(FILE* file);
 
-	employee& operator = (employee& sourse);
+	void output_file_txt(FILE* file) const;
+
+	employee& operator = (employee const& sourse);
 };
 
 namespace MyFunctions
 {
-	void sendMessage(FILE* file, const char* message);
+	void readRecord(FILE* file, int recordNum, employee& result);
 
-	void readMessage(FILE* file, char* readHere);
+	void overrideRecord(FILE* file, int recordNum, employee const& newRecord);
 
-	bool all_zero(const int* threads, int emount);
+	bool all_zero(const bool* threads, int emount);
+
+	int find_by_number(const employee* records, int size, int number);
 }

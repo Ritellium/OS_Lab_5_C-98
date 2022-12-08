@@ -15,9 +15,10 @@ constexpr int StandartSTRSize = 50;
 constexpr int BigSTRSize = 1000;
 constexpr int MaxSynchoTime = 50;//
 constexpr int SmallSleepTime = 10;//
-constexpr int EndTime = 250;//
-
-constexpr int eployeeSize = 24 + 4; // struct_size + len for name
+constexpr int EndTime = 250;
+constexpr char read = 'r';
+constexpr char modify = 'm';
+constexpr char new_record = 'n';
 
 
 /*
@@ -55,28 +56,28 @@ int main(int argc, char* argv[])
 	printf("input number of client processes: ");
 	scanf_s("%d", &clientEmount);
 
-	HANDLE* record_locks = new HANDLE[studentEmount];
-	HANDLE* continue_work = new HANDLE[clientEmount];
-	HANDLE* end_work = new HANDLE[clientEmount];
 	HANDLE* communication_pipes = new HANDLE[clientEmount];
-
-	LPSTR* names_record_locks = new LPSTR[studentEmount];
-	LPSTR* names_continue_work = new LPSTR[clientEmount];
-	LPSTR* names_end_work = new LPSTR[clientEmount];
+	HANDLE* answers = new HANDLE[clientEmount];
 
 	LPSTR* pipe_names = new LPSTR[clientEmount];
+	LPSTR* answer_names = new LPSTR[clientEmount];
 	for (int i = 0; i < clientEmount; i++)
 	{
 		LPSTR clientNum = new char[StandartSTRSize];
 		itoa(i + 1, clientNum, 10);
-		pipe_names[i] = new char[50];
+
+		pipe_names[i] = new char[StandartSTRSize];
 		strcpy(pipe_names[i], "\\\\.\\pipe\\communication_pipe_");
 		strcat(pipe_names[i], clientNum);
+
+		answer_names[i] = new char[StandartSTRSize];
+		strcpy(answer_names[i], "answer_");
+		strcat(answer_names[i], clientNum);
 
 		delete[] clientNum;
 
 		communication_pipes[i] = CreateNamedPipeA(pipe_names[i], 
-			PIPE_ACCESS_INBOUND, PIPE_TYPE_MESSAGE | PIPE_WAIT, 
+			PIPE_ACCESS_INBOUND, PIPE_TYPE_MESSAGE, 
 			1, 0, 0, INFINITE, nullptr);
 
 		if (communication_pipes[i] == INVALID_HANDLE_VALUE)
@@ -84,77 +85,17 @@ int main(int argc, char* argv[])
 			printf("Creation of the named pipe failed.");
 			{
 				delete[] file_name;
-
-				delete[] names_end_work;
-				delete[] names_continue_work;
-				delete[] names_record_locks;
-
-				delete[] end_work;
-				delete[] continue_work;
-				delete[] record_locks;
 			}
 			return 0;
 		}
-	}
 
-	// Events initialization 
-	for (int i = 0; i < clientEmount; i++)
-	{
-		LPSTR clientNum = new char[StandartSTRSize];
-		itoa(i + 1, clientNum, 10);
+		answers[i] = CreateEventA(nullptr, FALSE, FALSE, answer_names[i]);
 
-		names_continue_work[i] = new char[StandartSTRSize];
-		strcpy(names_continue_work[i], "continue_work_");
-		strcat(names_continue_work[i], clientNum);
-		names_end_work[i] = new char[StandartSTRSize];
-		strcpy(names_end_work[i], "end_work_");
-		strcat(names_end_work[i], clientNum);
-
-		delete[] clientNum;
-
-		continue_work[i] = CreateEventA(nullptr, FALSE, FALSE, names_continue_work[i]);
-		end_work[i] = CreateEventA(nullptr, FALSE, FALSE, names_end_work[i]);
-
-		if (continue_work[i] == nullptr || end_work[i] == nullptr)
+		if (answers[i] == INVALID_HANDLE_VALUE)
 		{
-			printf("Wrong HANDLEs of sync objects");
-			// Чистка
+			printf("Creation of the event failed.");
 			{
-				delete[] names_end_work;
-				delete[] names_continue_work;
-				delete[] names_record_locks;
-
-				delete[] end_work;
-				delete[] continue_work;
-				delete[] record_locks;
-			}
-			return 0;
-		}
-	}
-
-	for (int i = 0; i < studentEmount; i++)
-	{
-		LPSTR recordNum = new char[StandartSTRSize];
-		itoa(i + 1, recordNum, 10);
-
-		names_record_locks[i] = new char[StandartSTRSize];
-		strcpy(names_record_locks[i], "record_lock_");
-		strcat(names_record_locks[i], recordNum);
-
-		record_locks[i] = CreateMutexA(nullptr, FALSE, names_record_locks[i]);
-
-		if (record_locks[i] == nullptr)
-		{
-			printf("Wrong HANDLEs of sync objects");
-			// Чистка
-			{
-				delete[] names_end_work;
-				delete[] names_continue_work;
-				delete[] names_record_locks;
-
-				delete[] end_work;
-				delete[] continue_work;
-				delete[] record_locks;
+				delete[] file_name;
 			}
 			return 0;
 		}
@@ -162,35 +103,21 @@ int main(int argc, char* argv[])
 
 	// Student records creation
 
-	fopen_s(&file_bin, file_name, "r+b");
-	for (int i = 0; i < studentEmount; i++)
-	{
-		employee emp;
-		emp.input();
-		emp.output_file(file_bin);
-	}
-	fclose(file_bin);
+	employee* records = new employee[studentEmount];
 
 	fopen_s(&file_bin, file_name, "r+b");
 	for (int i = 0; i < studentEmount; i++)
 	{
-		employee emp;
-		emp.input_file(file_bin);
-		emp.output();
+		records[i].input();
+		records[i].output_file_bin(file_bin);
+		records[i].output();
 	}
+
 	fclose(file_bin);
 
-	// Senders work
-	LPSTR SenderAllocation = new char[StandartSTRSize];
-	strcpy(SenderAllocation, "Sender.exe");
-
-	LPSTR str_record_locks = new char[BigSTRSize];
-	itoa(studentEmount, str_record_locks, 10); // argv[5]
-	for (int j = 0; j < studentEmount; j++)
-	{
-		strcat(str_record_locks, " ");
-		strcat(str_record_locks, names_record_locks[j]); // argv[6] -> argv[6 + studentEmount - 1]
-	}
+	// CLients work
+	LPSTR ClientAllocation = new char[StandartSTRSize];
+	strcpy(ClientAllocation, "Client.exe");
 
 	LPSTR* data = new LPSTR[clientEmount];
 	for (int i = 0; i < clientEmount; i++)
@@ -199,50 +126,40 @@ int main(int argc, char* argv[])
 		itoa(i + 1, clientNum, 10);		
 
 		data[i] = new char[BigSTRSize];
-		strcpy(data[i], SenderAllocation); // argv[1]
+		strcpy(data[i], ClientAllocation); // argv[0]
 		strcat(data[i], " ");
-		strcat(data[i], file_name); // argv[1]
+		strcat(data[i], clientNum); // argv[1]
 		strcat(data[i], " ");
-		strcat(data[i], names_continue_work[i]); // argv[2]
+		strcat(data[i], pipe_names[i]); // argv[2]
 		strcat(data[i], " ");
-		strcat(data[i], names_end_work[i]); // argv[3]
-		strcat(data[i], " ");
-		strcat(data[i], clientNum); // argv[4]
+		strcat(data[i], answer_names[i]); // argv[3]
 
-		strcat(data[i], " ");
-		strcat(data[i], str_record_locks); // argv[5] && argv[6] -> argv[6 + studentEmount - 1]
+		delete[] clientNum;
 	}
 
-	_STARTUPINFOA* senders_StartInf = new _STARTUPINFOA[clientEmount];
-	_PROCESS_INFORMATION* senders_PrInf = new _PROCESS_INFORMATION[clientEmount];
+	_STARTUPINFOA* clients_StartInf = new _STARTUPINFOA[clientEmount];
+	_PROCESS_INFORMATION* clients_PrInf = new _PROCESS_INFORMATION[clientEmount];
 
 	for (int i = 0; i < clientEmount; i++)
 	{
-		ZeroMemory(&senders_StartInf[i], sizeof(_STARTUPINFOW));
-		senders_StartInf[i].cb = sizeof(_STARTUPINFOW);
+		ZeroMemory(&clients_StartInf[i], sizeof(_STARTUPINFOW));
+		clients_StartInf[i].cb = sizeof(_STARTUPINFOW);
 	}
 
 	// создаем Senders
 	for (int i = 0; i < clientEmount; i++)
 	{
 		if (!CreateProcessA(nullptr, data[i], nullptr, nullptr, FALSE,
-			CREATE_NEW_CONSOLE, nullptr, nullptr, &senders_StartInf[i], &senders_PrInf[i]))
+			CREATE_NEW_CONSOLE, nullptr, nullptr, &clients_StartInf[i], &clients_PrInf[i]))
 		{
-			printf("The Sender %d is not created. Process stopping...\n", (i + 1));
+			printf("The Client %d is not created. Server stopping...\n", (i + 1));
 			// Чистка
 			{
-				delete[] names_end_work;
-				delete[] names_continue_work;
-				delete[] names_record_locks;
-
-				delete[] end_work;
-				delete[] continue_work;
-				delete[] record_locks;
-
+				delete[] file_name;
 				delete[] data;
 
-				delete[] senders_StartInf;
-				delete[] senders_PrInf;
+				delete[] clients_StartInf;
+				delete[] clients_PrInf;
 			}// Чистка
 			return 0;
 		}
@@ -252,95 +169,89 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	int action = 0;
-	int* end_of_threads = new int[clientEmount];
+	bool* end_of_threads = new bool[clientEmount];
 	for (int i = 0; i < clientEmount; ++i)
 	{
-		end_of_threads[i] = 1; // proof of thread not closed (needed further)
+		end_of_threads[i] = true; // proof of thread not closed (needed further)
+	}
+	// from here there is no god
+
+	bool* record_access = new bool[studentEmount];
+	for (int i = 0; i < studentEmount; i++)
+	{
+		record_access[i] = true;
 	}
 
+	int* modify_indexes = new int[clientEmount];
+	for (int i = 0; i < clientEmount; ++i)
+	{
+		modify_indexes[i] = -1;
+	}
 
-	// from here there is no god
+	char action;
+	int employee_num;
+	employee new_one;
+
 	while (!MyFunctions::all_zero(end_of_threads, clientEmount))
 	{
-		for (int i = 0; i < sendersEmount; ++i)
+		for (int i = 0; i < clientEmount; ++i)
 		{
 			if (end_of_threads[i] == 1)
 			{
-				WaitForSingleObject(senders_ready[i], INFINITE);
-				if (WaitForSingleObject(end_work[i], SmallSleepTime) != WAIT_TIMEOUT)
+				if (modify_indexes[i] == -1)
 				{
-					end_of_threads[i] = 0;
-					CloseHandle(senders_PrInf[i].hThread);
-					CloseHandle(senders_PrInf[i].hProcess);
+					ReadFile(communication_pipes[i], &action, sizeof(char), nullptr, nullptr);
 				}
-			}
-		}
-
-		printf("<1> to read messages, <other> to end work : \n");
-		scanf_s("%d", &action);
-
-		if (action == 1)
-		{
-			fopen_s(&file_bin, file_name, "rb");
-
-			char* readed_message = new char[StandartSTRSize];
-			printf("Messages: \n");
-
-			while (WaitForSingleObject(senders_counter, SmallSleepTime) != WAIT_TIMEOUT)
-			{
-				MyFunctions::readMessage(file_bin, readed_message);
-				printf("%s\n", readed_message);
-			}
-
-			delete[] readed_message;
-			fclose(file_bin);
-
-			ReleaseSemaphore(string_counter, stringsEmount, nullptr);
-			for (int i = 0; i < sendersEmount; i++)
-			{
-				SetEvent(continue_work[i]);
-			}
-		}
-
-		if (action != 1)
-		{
-			printf("There are no more working senders, process stopping...");
-			for (int i = 0; i < sendersEmount; i++)
-			{
-				if (end_of_threads[i] == 1)
+				else
 				{
-					SetEvent(continue_work[i]);
-					Sleep(SmallSleepTime);
-					SetEvent(end_work[i]);
-					Sleep(SmallSleepTime);
-					CloseHandle(senders_PrInf[i].hThread);
-					CloseHandle(senders_PrInf[i].hProcess);
+					action = modify;
 				}
+				if (action == read || action == modify)
+				{
+					int index;
+					if (modify_indexes[i] == -1)
+					{
+						ReadFile(communication_pipes[i], &employee_num, sizeof(int), nullptr, nullptr);
+						index = MyFunctions::find_by_number(records, studentEmount, employee_num);
+					}
+					else
+					{
+						index = modify_indexes[i];
+					}
+
+					if (action == modify && record_access[index])
+					{
+						record_access[index] = false;
+						WriteFile(communication_pipes[i], &records[index], sizeof(employee), nullptr, nullptr);
+						modify_indexes[i] = index;
+					}
+					else if (action == modify)
+					{
+						continue;
+					}
+				}
+				else
+				{
+					ReadFile(communication_pipes[i], &new_one, sizeof(employee), nullptr, nullptr);
+
+					records[modify_indexes[i]] = new_one;
+
+					record_access[modify_indexes[i]] = true;
+					modify_indexes[i] = -1;
+				}
+
+
+
+
 			}
-			break;
 		}
-
-		fopen_s(&file_bin, file_name, "wb");
-		fclose(file_bin);
-
-		printf("Now waiting for messages\n");
-		Sleep(EndTime);
 	}
 	// Чистка
 	{
-		delete[] names_end_work;
-		delete[] names_continue_work;
-		delete[] names_senders_ready;
-
-		delete[] end_work;
-		delete[] continue_work;
-		delete[] senders_ready;
-
 		delete[] data;
 
-		delete[] senders_StartInf;
-		delete[] senders_PrInf;
 	}
+
+	Sleep(EndTime);
 	return 0;
 }

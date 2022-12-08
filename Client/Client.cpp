@@ -9,32 +9,28 @@
 
 constexpr int StandartSTRSize = 21;
 constexpr int SmallSleepTime = 10;
+constexpr int EndTime = 250;
+constexpr char read = 'r';
+constexpr char modify = 'm';
+constexpr char new_record = 'n';
 
 #pragma warning (disable:4996)
 
 int main(int argc, char* argv[])
 {
-    FILE* file_bin;
-    errno_t error_file;
-    const char* file_name = argv[1];
+    LPCSTR pipe_name = argv[2];
+    LPCSTR answer_name = argv[3];
 
-    LPCSTR name_senders_ready = argv[2];
-    LPCSTR name_continue_work = argv[3];
-    LPCSTR name_end_work = argv[4];
-    LPCSTR string_counter = argv[5];
-    LPCSTR senders_counter = argv[6];
+    printf("I'm Client number %s, type below to read/sent messages\n", argv[1]);
 
-    printf("I'm Sender number %s, type below to sent messages\n", argv[7]);
+    HANDLE pipe_to_main = CreateFileA(pipe_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    HANDLE answer = OpenEventA(EVENT_ALL_ACCESS, EVENT_MODIFY_STATE, answer_name);
 
-    HANDLE this_ready = OpenEventA(EVENT_ALL_ACCESS, EVENT_MODIFY_STATE, name_senders_ready);
-    HANDLE continue_work = OpenEventA(EVENT_ALL_ACCESS, EVENT_MODIFY_STATE, name_continue_work);
-    HANDLE end_work = OpenEventA(EVENT_ALL_ACCESS, EVENT_MODIFY_STATE, name_end_work);
-    HANDLE semaphore_string = OpenSemaphoreA(SEMAPHORE_ALL_ACCESS, SEMAPHORE_MODIFY_STATE, string_counter);
-    HANDLE semaphore_senders = OpenSemaphoreA(SEMAPHORE_ALL_ACCESS, SEMAPHORE_MODIFY_STATE, senders_counter);
-
-    if (this_ready == nullptr || semaphore_string == nullptr || semaphore_senders == nullptr || continue_work == nullptr || end_work == nullptr)
+    if (pipe_to_main == INVALID_HANDLE_VALUE || answer == INVALID_HANDLE_VALUE)
     {
-        printf("Wrong HANDLEs of sync objects");
+        printf("Wrong HANDLE of pipe");
+
         return 0;
     }
 
@@ -42,55 +38,24 @@ int main(int argc, char* argv[])
 
     do
     {
-        printf("<1> to input message, <other> to end work : \n");
+        printf("<1> to read recoed, <2> to modify record, <other> to end work: ");
         scanf_s("%d", &action);
 
-        if (action == 1)
+        if (action == read)
         {
-            error_file = fopen_s(&file_bin, file_name, "ab");
-            if (error_file != 0)
-            {
-                printf("Error opening file");
-                return 0;
-            }
-            auto message = new char[StandartSTRSize];
-            printf("Enter the message (maximum 20 symbols)\n");
-            scanf_s("%s", message, StandartSTRSize);
-
-            if (WaitForSingleObject(semaphore_string, SmallSleepTime) == WAIT_TIMEOUT)
-            {
-                delete[] message;
-                printf("The file is full\n");
-                SetEvent(this_ready);
-                fclose(file_bin);
-                WaitForSingleObject(continue_work, INFINITE);
-                if (WaitForSingleObject(end_work, SmallSleepTime) == WAIT_TIMEOUT)
-                {
-                    continue;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            else
-            {
-                ReleaseSemaphore(semaphore_senders, 1, nullptr);
-                MyFunctions::sendMessage(file_bin, message);
-                delete[] message;
-                fclose(file_bin);
-                continue;
-            }
+            
         }
-        else if (action != 1)
+        else if (action == modify)
+        {
+            
+        }
+        else
         {
             printf("Process stopping...\n");
-
-            SetEvent(this_ready);
-            SetEvent(end_work);
             break;
         }
     } while (true);
 
+    Sleep(EndTime);
     return 0;
 }
