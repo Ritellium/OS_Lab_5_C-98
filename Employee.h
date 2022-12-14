@@ -35,14 +35,3 @@ struct employee
 
 	employee& operator = (employee const& sourse);
 };
-
-namespace MyFunctions
-{
-	void readRecord(FILE* file, int recordNum, employee& result);
-
-	void overrideRecord(FILE* file, int recordNum, employee const& newRecord);
-
-	bool all_zero(const bool* threads, int emount);
-
-	int find_by_number(const employee* records, int size, int number);
-}
