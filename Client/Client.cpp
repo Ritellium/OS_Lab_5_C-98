@@ -16,7 +16,12 @@ int main(int argc, char* argv[])
 
     if (!client.Create(argv[2]))
     {
-        printf("something went wrong :( \n");
+        printf("connection went wrong :( \n");
+
+        char c;
+        printf("Enter any char to exit program");
+        scanf_s("%c", &c);
+
         return 0;
     } 
 

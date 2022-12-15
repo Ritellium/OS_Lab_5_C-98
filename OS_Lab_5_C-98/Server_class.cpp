@@ -114,6 +114,8 @@ void Server::Work()
 				someoneWorks = true;
 			}
 		}		
+
+		Sleep(SmallSleepTime);
 	} while (someoneWorks);
 }
 

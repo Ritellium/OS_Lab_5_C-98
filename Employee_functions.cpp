@@ -36,7 +36,7 @@ void employee::output() // write to console
 {
 	printf_s("%d ", num);
 	printf_s("%s ", &name);
-	printf_s("%f ", hours);
+	printf_s("%f\n", hours);
 }
 
 void employee::input_file_bin(FILE* file) // mode rb - binary read

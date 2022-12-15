@@ -11,6 +11,7 @@
 
 constexpr int StandartSTRSize = 50;
 constexpr int BigSTRSize = 150;
+constexpr int SmallSleepTime = 40;
 
 constexpr char read = 'r';
 constexpr char modify = 'm';

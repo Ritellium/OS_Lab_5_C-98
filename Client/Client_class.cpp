@@ -8,10 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Client::Client()
-{
-	pipe_to_server = nullptr;
-}
+Client::Client(): some_buffer(0) {}
 
 bool Client::Create(LPCSTR _pipe)
 {
@@ -32,7 +29,7 @@ void Client::Work()
 
 	do
 	{
-		printf("<1> to read record, <2> to modify record, <other> to end work: ");
+		printf("\'r\' to read record, \'m\' to modify record, <other> to end work: ");
 		scanf_s("%c", &action);
 
 		if (action == read)
@@ -54,11 +51,11 @@ void Client::ActionRead()
 
 	printf("Enter emloyee's number to read record: ");
 	scanf_s("%d", &number);
-	WriteFile(pipe_to_server, &read, sizeof(int), &some_buffer, nullptr);
-	WriteFile(pipe_to_server, &number, sizeof(int), &some_buffer, nullptr);
+	WriteFile(pipe_to_server, &read, sizeof(read), &some_buffer, nullptr);
+	WriteFile(pipe_to_server, &number, sizeof(number), &some_buffer, nullptr);
 
 	employee buf;
-	ReadFile(pipe_to_server, &buf, sizeof(employee), &some_buffer, nullptr);
+	ReadFile(pipe_to_server, &buf, sizeof(buf), &some_buffer, nullptr);
 
 	if (buf.num != 0)
 	{
@@ -71,7 +68,7 @@ void Client::ActionRead()
 	}
 
 	char c;
-	printf("Enter any char to complete operation: ");
+	printf("Enter any char to complete operation");
 	scanf_s("%c", &c);
 }
 
@@ -82,13 +79,13 @@ void Client::ActionModify()
 	printf("Enter emloyee's number to read record: ");
 	scanf_s("%d", &number);
 
-	WriteFile(pipe_to_server, &modify, sizeof(int), &some_buffer, nullptr);
-	WriteFile(pipe_to_server, &number, sizeof(int), &some_buffer, nullptr);
+	WriteFile(pipe_to_server, &modify, sizeof(modify), &some_buffer, nullptr);
+	WriteFile(pipe_to_server, &number, sizeof(number), &some_buffer, nullptr);
 
 	printf("Waiting for server responce... (try to complete other clients) \n");
 
 	employee buf;
-	ReadFile(pipe_to_server, &buf, sizeof(employee), &some_buffer, nullptr);
+	ReadFile(pipe_to_server, &buf, sizeof(buf), &some_buffer, nullptr);
 
 	if (buf.num != 0)
 	{
@@ -98,7 +95,7 @@ void Client::ActionModify()
 		printf("Enter a record to replace: \n");
 		buf.input();
 
-		WriteFile(pipe_to_server, &buf, sizeof(employee), &some_buffer, nullptr);
+		WriteFile(pipe_to_server, &buf, sizeof(buf), &some_buffer, nullptr);
 	}
 	else
 	{
@@ -106,15 +103,15 @@ void Client::ActionModify()
 	}
 
 	char c;
-	printf("Enter any char to complete operation: ");
+	printf("Enter any char to complete operation");
 	scanf_s("%c", &c);
 }
 
 void Client::ActionEnd()
 {
 	char c;
-	printf("Enter any char to exit program: ");
+	printf("Enter any char to exit program");
 	scanf_s("%c", &c);
 
-	WriteFile(pipe_to_server, &end, sizeof(int), &some_buffer, nullptr);
+	WriteFile(pipe_to_server, &end, sizeof(end), &some_buffer, nullptr);
 }
