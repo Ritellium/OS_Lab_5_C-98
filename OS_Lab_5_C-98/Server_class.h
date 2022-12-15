@@ -61,6 +61,8 @@ public:
 	int find_by_number(int number) const;
 
 	void Work();
+
+	void OutputDataBase();
 };
 
 class Manager
@@ -79,6 +81,9 @@ class Manager
 
 	Server* serv;
 	StateAbstract* state;
+
+	LPOVERLAPPED forReadWrite;
+	DWORD some_buffer;
 
 public:
 

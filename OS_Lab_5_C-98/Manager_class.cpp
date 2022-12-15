@@ -9,11 +9,7 @@
 #include <charconv>
 #include <tchar.h>
 
-Manager::Manager() : works(false)
-{
-	communication_pipe = nullptr;
-	state = nullptr;
-}
+Manager::Manager() : works(false) {}
 
 Manager::~Manager()
 {
@@ -35,7 +31,7 @@ bool Manager::create(int number, Server* st)
 	strcat(pipe_name, clientNum);
 
 	communication_pipe = CreateNamedPipeA(pipe_name,
-		PIPE_ACCESS_DUPLEX, FILE_FLAG_OVERLAPPED,
+		PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_WAIT,
 		2, sizeof(employee) + 4, sizeof(employee) + 4, INFINITE, nullptr);
 
 	if (communication_pipe == INVALID_HANDLE_VALUE)
@@ -86,7 +82,7 @@ void Manager::Manage()
 void StateBegin::action()
 {
 	char todo;
-	if (ReadFile(owner->communication_pipe, &todo, sizeof(char), nullptr, nullptr))
+	if (ReadFile(owner->communication_pipe, &todo, sizeof(char), &owner->some_buffer, owner->forReadWrite))
 	{
 		if (todo == read)
 		{
@@ -112,7 +108,7 @@ void StateBegin::action()
 void StateRead::action()
 {
 	int num;
-	if (ReadFile(owner->communication_pipe, &num, sizeof(char), nullptr, nullptr))
+	if (ReadFile(owner->communication_pipe, &num, sizeof(char), &owner->some_buffer, owner->forReadWrite))
 	{
 		employee buf;
 		int index = owner->serv->find_by_number(num);
@@ -121,7 +117,7 @@ void StateRead::action()
 		{
 			owner->serv->readRecord(index, buf);
 		}
-		WriteFile(owner->communication_pipe, &buf, sizeof(employee), nullptr, nullptr);
+		WriteFile(owner->communication_pipe, &buf, sizeof(employee), &owner->some_buffer, owner->forReadWrite);
 
 		owner->state = new StateBegin(owner);
 		owner->state->action();
@@ -132,7 +128,7 @@ void StateRead::action()
 void StateModify::action()
 {
 	int num;
-	if (ReadFile(owner->communication_pipe, &num, sizeof(char), nullptr, nullptr))
+	if (ReadFile(owner->communication_pipe, &num, sizeof(char), &owner->some_buffer, owner->forReadWrite))
 	{
 		int index = owner->serv->find_by_number(num);
 
@@ -143,7 +139,7 @@ void StateModify::action()
 		else
 		{
 			employee buf;
-			WriteFile(owner->communication_pipe, &buf, sizeof(employee), nullptr, nullptr);
+			WriteFile(owner->communication_pipe, &buf, sizeof(employee), &owner->some_buffer, owner->forReadWrite);
 			owner->state = new StateBegin(owner);
 			delete this;
 		}
@@ -154,7 +150,7 @@ void StateModify::action()
 		{
 			owner->serv->record_access[buffer] = buffer;
 
-			WriteFile(owner->communication_pipe, &owner->serv->records[buffer], sizeof(employee), nullptr, nullptr);
+			WriteFile(owner->communication_pipe, &owner->serv->records[buffer], sizeof(employee), &owner->some_buffer, owner->forReadWrite);
 			owner->state = new StateWrite(owner, buffer);
 			delete this;
 		}
@@ -164,7 +160,7 @@ void StateModify::action()
 void StateWrite::action()
 {
 	employee buf;
-	if (ReadFile(owner->communication_pipe, &buf, sizeof(employee), nullptr, nullptr))
+	if (ReadFile(owner->communication_pipe, &buf, sizeof(employee), &owner->some_buffer, owner->forReadWrite))
 	{
 		owner->serv->records[buffer] = buf;
 		owner->serv->overrideRecord(buffer, buf);

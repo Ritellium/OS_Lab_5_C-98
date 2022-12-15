@@ -20,9 +20,6 @@ remember, no STD...
 
 int main(int argc, char* argv[])
 {
-	
-	// Input for Creator
-
 	LPSTR file_name = new char[StandartSTRSize];
 	printf("input name of binary file (it will be created): ");
 	scanf_s("%s", file_name, StandartSTRSize - 1);
@@ -45,6 +42,8 @@ int main(int argc, char* argv[])
 	}
 
 	main_server.Work();
+
+	main_server.OutputDataBase();
 
 	return 0;
 }

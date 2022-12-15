@@ -38,9 +38,12 @@ bool Server::CreateDataBase(const char* _filename, int _emount)
 		{
 			records[i].input();
 			records[i].output_file_bin(database);
-			records[i].output();
 
 			record_access[i] = -1;
+		}
+		for (int i = 0; i < recordEmount; i++)
+		{
+			records[i].output();
 		}
 
 		fclose(database);
@@ -79,18 +82,22 @@ int Server::find_by_number(int number) const
 
 void Server::readRecord(int recordNum, employee& result)
 {
-	fopen_s(&database, file_name, "r+b");
-	fseek(database, recordNum * sizeof(employee), SEEK_SET);
-	fread(&result, sizeof(employee), 1, database);
-	fclose(database);
+	if (fopen_s(&database, file_name, "r+b") == 0)
+	{
+		fseek(database, recordNum * sizeof(employee), SEEK_SET);
+		fread(&result, sizeof(employee), 1, database);
+		fclose(database);
+	}
 }
 
 void Server::overrideRecord(int recordNum, employee const& newRecord)
 {
-	fopen_s(&database, file_name, "r+b");
-	fseek(database, recordNum * sizeof(employee), SEEK_SET);
-	fwrite(&newRecord, sizeof(employee), 1, database);
-	fclose(database);
+	if (fopen_s(&database, file_name, "r+b") == 0)
+	{
+		fseek(database, recordNum * sizeof(employee), SEEK_SET);
+		fwrite(&newRecord, sizeof(employee), 1, database);
+		fclose(database);
+	}
 }
 
 void Server::Work()
@@ -108,4 +115,19 @@ void Server::Work()
 			}
 		}		
 	} while (someoneWorks);
+}
+
+void Server::OutputDataBase()
+{
+	if (fopen_s(&database, file_name, "r+b") == 0)
+	{
+		employee buf;
+		for (int i = 0; i < recordEmount; i++)
+		{
+			buf.input_file_bin(database);
+			buf.output();
+		}
+
+		fclose(database);
+	}
 }

@@ -17,6 +17,7 @@ constexpr char end = 'e';
 class Client
 {
 	HANDLE pipe_to_server;
+	DWORD some_buffer;
 
 public:
 	Client();

@@ -54,12 +54,11 @@ void Client::ActionRead()
 
 	printf("Enter emloyee's number to read record: ");
 	scanf_s("%d", &number);
-
-	WriteFile(pipe_to_server, &read, sizeof(int), nullptr, nullptr);
-	WriteFile(pipe_to_server, &number, sizeof(int), nullptr, nullptr);
+	WriteFile(pipe_to_server, &read, sizeof(int), &some_buffer, nullptr);
+	WriteFile(pipe_to_server, &number, sizeof(int), &some_buffer, nullptr);
 
 	employee buf;
-	ReadFile(pipe_to_server, &buf, sizeof(employee), nullptr, nullptr);
+	ReadFile(pipe_to_server, &buf, sizeof(employee), &some_buffer, nullptr);
 
 	if (buf.num != 0)
 	{
@@ -83,13 +82,13 @@ void Client::ActionModify()
 	printf("Enter emloyee's number to read record: ");
 	scanf_s("%d", &number);
 
-	WriteFile(pipe_to_server, &modify, sizeof(int), nullptr, nullptr);
-	WriteFile(pipe_to_server, &number, sizeof(int), nullptr, nullptr);
+	WriteFile(pipe_to_server, &modify, sizeof(int), &some_buffer, nullptr);
+	WriteFile(pipe_to_server, &number, sizeof(int), &some_buffer, nullptr);
 
 	printf("Waiting for server responce... (try to complete other clients) \n");
 
 	employee buf;
-	ReadFile(pipe_to_server, &buf, sizeof(employee), nullptr, nullptr);
+	ReadFile(pipe_to_server, &buf, sizeof(employee), &some_buffer, nullptr);
 
 	if (buf.num != 0)
 	{
@@ -99,7 +98,7 @@ void Client::ActionModify()
 		printf("Enter a record to replace: \n");
 		buf.input();
 
-		WriteFile(pipe_to_server, &buf, sizeof(employee), nullptr, nullptr);
+		WriteFile(pipe_to_server, &buf, sizeof(employee), &some_buffer, nullptr);
 	}
 	else
 	{
@@ -117,5 +116,5 @@ void Client::ActionEnd()
 	printf("Enter any char to exit program: ");
 	scanf_s("%c", &c);
 
-	WriteFile(pipe_to_server, &end, sizeof(int), nullptr, nullptr);
+	WriteFile(pipe_to_server, &end, sizeof(int), &some_buffer, nullptr);
 }

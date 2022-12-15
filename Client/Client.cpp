@@ -13,11 +13,14 @@
 int main(int argc, char* argv[])
 {
     Client client;
-    client.Create(argv[2]);
 
-    printf("I'm Client number %s, type below to read/sent messages\n", argv[1]);
+    if (!client.Create(argv[2]))
+    {
+        printf("something went wrong :( \n");
+        return 0;
+    } 
 
-    
+    client.Work();
 
     return 0;
 }
