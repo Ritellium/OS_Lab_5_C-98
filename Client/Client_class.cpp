@@ -10,10 +10,17 @@
 
 Client::Client(): some_buffer(0) {}
 
+Client::~Client() { CloseHandle(pipe_to_server); }
+
 bool Client::Create(LPCSTR _pipe)
 {
+	if (!WaitNamedPipeA(_pipe, ConnectTime))
+	{
+		return false;
+	}
+
 	pipe_to_server = CreateFileA(_pipe, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
 
 	if (pipe_to_server == INVALID_HANDLE_VALUE)
 	{
@@ -53,6 +60,8 @@ void Client::ActionRead()
 	scanf_s("%d", &number);
 	WriteFile(pipe_to_server, &read, sizeof(read), &some_buffer, nullptr);
 	WriteFile(pipe_to_server, &number, sizeof(number), &some_buffer, nullptr);
+
+	printf("Request sended\n"); // to delete
 
 	employee buf;
 	ReadFile(pipe_to_server, &buf, sizeof(buf), &some_buffer, nullptr);

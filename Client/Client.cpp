@@ -14,6 +14,9 @@ int main(int argc, char* argv[])
 {
     Client client;
 
+    printf("I am client number %s \n", argv[1]);
+    std::cout << argv[2];
+
     if (!client.Create(argv[2]))
     {
         printf("connection went wrong :( \n");

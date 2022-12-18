@@ -11,7 +11,9 @@
 
 constexpr int StandartSTRSize = 50;
 constexpr int BigSTRSize = 150;
-constexpr int SmallSleepTime = 40;
+constexpr int SmallSleepTime = 100;
+
+constexpr int PipeBufferSize = 256;
 
 constexpr char read = 'r';
 constexpr char modify = 'm';
@@ -78,13 +80,16 @@ class Manager
 	HANDLE communication_pipe;
 	_STARTUPINFOA client_StartInf;
 	_PROCESS_INFORMATION client_PrInf;
+	LPSTR pipe_name;
+	LPSTR command_line;
 	bool works;
 
 	Server* serv;
 	StateAbstract* state;
 
-	LPOVERLAPPED forReadWrite;
+	OVERLAPPED forReadWrite;
 	DWORD some_buffer;
+	int clientNumber;
 
 public:
 

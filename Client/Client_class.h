@@ -9,7 +9,7 @@
 
 constexpr int StandartSTRSize = 21;
 constexpr int SmallSleepTime = 40;
-constexpr int EndTime = 250;
+constexpr int ConnectTime = 250;
 constexpr char read = 'r';
 constexpr char modify = 'm';
 constexpr char end = 'e';
@@ -31,4 +31,6 @@ public:
 	void ActionModify();
 
 	void ActionEnd();
+
+	~Client();
 };
