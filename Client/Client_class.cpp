@@ -10,9 +10,13 @@
 
 Client::Client(): some_buffer(0) {}
 
-Client::~Client() { CloseHandle(pipe_to_server); }
+Client::~Client() 
+{ 
+	CloseHandle(pipe_to_server); 
+	CloseHandle(send_data); 
+}
 
-bool Client::Create(LPCSTR _pipe)
+bool Client::Create(LPCSTR _pipe, LPCSTR _answer)
 {
 	if (!WaitNamedPipeA(_pipe, ConnectTime))
 	{
@@ -20,9 +24,11 @@ bool Client::Create(LPCSTR _pipe)
 	}
 
 	pipe_to_server = CreateFileA(_pipe, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-		OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
+		OPEN_EXISTING, NULL, nullptr);
 
-	if (pipe_to_server == INVALID_HANDLE_VALUE)
+	send_data = OpenEventA(EVENT_ALL_ACCESS, EVENT_MODIFY_STATE, _answer);
+
+	if (pipe_to_server == INVALID_HANDLE_VALUE || send_data == INVALID_HANDLE_VALUE)
 	{
 		return false;
 	}
@@ -61,6 +67,7 @@ void Client::ActionRead()
 	WriteFile(pipe_to_server, &read, sizeof(read), &some_buffer, nullptr);
 	WriteFile(pipe_to_server, &number, sizeof(number), &some_buffer, nullptr);
 
+	SetEvent(send_data);
 	printf("Request sended\n"); // to delete
 
 	employee buf;
@@ -90,6 +97,7 @@ void Client::ActionModify()
 
 	WriteFile(pipe_to_server, &modify, sizeof(modify), &some_buffer, nullptr);
 	WriteFile(pipe_to_server, &number, sizeof(number), &some_buffer, nullptr);
+	SetEvent(send_data);
 
 	printf("Waiting for server responce... (try to complete other clients) \n");
 
@@ -105,6 +113,7 @@ void Client::ActionModify()
 		buf.input();
 
 		WriteFile(pipe_to_server, &buf, sizeof(buf), &some_buffer, nullptr);
+		SetEvent(send_data);
 	}
 	else
 	{
@@ -123,4 +132,5 @@ void Client::ActionEnd()
 	scanf_s("%c", &c);
 
 	WriteFile(pipe_to_server, &end, sizeof(end), &some_buffer, nullptr);
+	SetEvent(send_data);
 }

@@ -11,7 +11,9 @@
 
 constexpr int StandartSTRSize = 50;
 constexpr int BigSTRSize = 150;
-constexpr int SmallSleepTime = 100;
+
+constexpr int WaitForOneClientTime = 50;
+constexpr int ServerCycleTime = 250;
 
 constexpr int PipeBufferSize = 256;
 
@@ -78,9 +80,13 @@ class Manager
 	friend class StateEnd;
 
 	HANDLE communication_pipe;
+	LPSTR pipe_name;
+
+	HANDLE clientHasData;
+	LPSTR event_name;
+
 	_STARTUPINFOA client_StartInf;
 	_PROCESS_INFORMATION client_PrInf;
-	LPSTR pipe_name;
 	LPSTR command_line;
 	bool works;
 

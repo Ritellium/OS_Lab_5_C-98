@@ -12,12 +12,14 @@
 Manager::Manager() : works(false), some_buffer(0) 
 {
 	pipe_name = new char[StandartSTRSize];
+	event_name = new char[StandartSTRSize];
 	command_line = new char[BigSTRSize];
 }
 
 Manager::~Manager()
 {
 	delete pipe_name;
+	delete event_name;
 	delete command_line;
 	CloseHandle(client_PrInf.hThread);
 	CloseHandle(client_PrInf.hProcess);
@@ -38,10 +40,14 @@ bool Manager::create(int number, Server* st)
 	strcat(pipe_name, clientNum);
 
 	communication_pipe = CreateNamedPipeA(pipe_name,
-		PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_WAIT,
-		1, PipeBufferSize, PipeBufferSize, NULL, nullptr);
+		PIPE_ACCESS_DUPLEX, PIPE_WAIT,
+		1, PipeBufferSize, PipeBufferSize, INFINITE, nullptr);
 
-	if (communication_pipe == INVALID_HANDLE_VALUE)
+	strcpy(event_name, "answer_");
+	strcat(event_name, clientNum);
+	clientHasData = CreateEventA(nullptr, false, false, event_name);
+
+	if (communication_pipe == INVALID_HANDLE_VALUE || clientHasData == INVALID_HANDLE_VALUE)
 	{
 		delete[] clientNum;
 		return false;
@@ -54,6 +60,8 @@ bool Manager::create(int number, Server* st)
 	strcat(command_line, clientNum); // argv[1]
 	strcat(command_line, " ");
 	strcat(command_line, pipe_name); // argv[2]
+	strcat(command_line, " ");
+	strcat(command_line, event_name); // argv[3]
 
 	delete[] clientNum;
 
@@ -86,12 +94,13 @@ void Manager::Manage()
 	state->action();
 }
 
-
 void StateBegin::action()
 {
 	char todo;
-	if (ReadFile(owner->communication_pipe, &todo, sizeof(char), &owner->some_buffer, &owner->forReadWrite))
+	if (WaitForSingleObject(owner->clientHasData, WaitForOneClientTime) != WAIT_TIMEOUT)
 	{
+		ReadFile(owner->communication_pipe, &todo, sizeof(char), &owner->some_buffer, nullptr);
+
 		if (todo == read)
 		{
 			owner->state = new StateRead(owner);
@@ -118,8 +127,10 @@ void StateBegin::action()
 void StateRead::action()
 {
 	int num;
-	if (ReadFile(owner->communication_pipe, &num, sizeof(num), &owner->some_buffer, &owner->forReadWrite))
+	if (WaitForSingleObject(owner->clientHasData, WaitForOneClientTime) != WAIT_TIMEOUT)
 	{
+		ReadFile(owner->communication_pipe, &num, sizeof(num), &owner->some_buffer, nullptr);
+
 		employee buf;
 		int index = owner->serv->find_by_number(num);
 
@@ -127,7 +138,7 @@ void StateRead::action()
 		{
 			owner->serv->readRecord(index, buf);
 		}
-		WriteFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, &owner->forReadWrite);
+		WriteFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, nullptr);
 
 		owner->state = new StateBegin(owner);
 		owner->state->action();
@@ -135,11 +146,25 @@ void StateRead::action()
 	}
 }
 
-void StateModify::action()
+void StateModify::action() // I was to lazy to make StateWaitForModifyAccess
 {
 	int num;
-	if (ReadFile(owner->communication_pipe, &num, sizeof(num), &owner->some_buffer, &owner->forReadWrite))
+	if (buffer != -1)
 	{
+		if (owner->serv->record_access[buffer] == -1)
+		{
+			owner->serv->record_access[buffer] = buffer;
+
+			employee to_write = owner->serv->records[buffer];
+			WriteFile(owner->communication_pipe, &to_write, sizeof(to_write), &owner->some_buffer, nullptr);
+			owner->state = new StateWrite(owner, buffer);
+			delete this;
+		}
+	}
+	else if (WaitForSingleObject(owner->clientHasData, WaitForOneClientTime) != WAIT_TIMEOUT)
+	{
+		ReadFile(owner->communication_pipe, &num, sizeof(num), &owner->some_buffer, nullptr);
+
 		int index = owner->serv->find_by_number(num);
 
 		if (index != -1)
@@ -149,20 +174,8 @@ void StateModify::action()
 		else
 		{
 			employee buf;
-			WriteFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, &owner->forReadWrite);
+			WriteFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, nullptr);
 			owner->state = new StateBegin(owner);
-			delete this;
-		}
-	}
-	else if (buffer != -1)
-	{
-		if (owner->serv->record_access[buffer] == -1)
-		{
-			owner->serv->record_access[buffer] = buffer;
-
-			employee to_write = owner->serv->records[buffer];
-			WriteFile(owner->communication_pipe, &to_write, sizeof(to_write), &owner->some_buffer, &owner->forReadWrite);
-			owner->state = new StateWrite(owner, buffer);
 			delete this;
 		}
 	}
@@ -171,8 +184,10 @@ void StateModify::action()
 void StateWrite::action()
 {
 	employee buf;
-	if (ReadFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, &owner->forReadWrite))
+	if (WaitForSingleObject(owner->clientHasData, WaitForOneClientTime) != WAIT_TIMEOUT)
 	{
+		ReadFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, nullptr);
+
 		owner->serv->records[buffer] = buf;
 		owner->serv->overrideRecord(buffer, buf);
 

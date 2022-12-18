@@ -115,7 +115,7 @@ void Server::Work()
 			}
 		}		
 
-		Sleep(SmallSleepTime);
+		Sleep(ServerCycleTime);
 	} while (someoneWorks);
 }
 

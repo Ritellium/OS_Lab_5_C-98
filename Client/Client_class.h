@@ -17,12 +17,13 @@ constexpr char end = 'e';
 class Client
 {
 	HANDLE pipe_to_server;
+	HANDLE send_data;
 	DWORD some_buffer;
 
 public:
 	Client();
 
-	bool Create(LPCSTR _pipe);
+	bool Create(LPCSTR _pipe, LPCSTR _answer);
 
 	void Work();
 
