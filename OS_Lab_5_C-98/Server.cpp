@@ -24,12 +24,26 @@ int main(int argc, char* argv[])
 	printf("input name of binary file (it will be created): ");
 	scanf_s("%s", file_name, StandartSTRSize - 1);
 
-	int studentEmount = 0;
-	printf("input number of records in .bin file: ");
-	scanf_s("%d", &studentEmount);
+	char mode;
+	printf("\'f\' to input from file and \'c\' to input with console: ");
+	std::cin >> mode; // scanf is helpless here
+
+	LPSTR inputName = nullptr;
+	int studentEmount = -1;
+	if (mode == file)
+	{
+		inputName = new char[StandartSTRSize];
+		printf("input name of txt file (to read from): ");
+		scanf_s("%s", inputName, StandartSTRSize - 1);
+	}
+	else
+	{
+		printf("input number of records in .bin file: ");
+		scanf_s("%d", &studentEmount);
+	}
 
 	Server main_server;
-	main_server.CreateDataBase(file_name, studentEmount);
+	main_server.CreateDataBase(file_name, studentEmount, mode, inputName);
 
 	int clientEmount = 0;
 	printf("input number of client processes: ");

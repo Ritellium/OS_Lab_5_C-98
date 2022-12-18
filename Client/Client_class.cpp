@@ -43,7 +43,7 @@ void Client::Work()
 	do
 	{
 		printf("\'r\' to read record, \'m\' to modify record, <other> to end work: ");
-		scanf_s("%c", &action);
+		std::cin >> action;
 
 		if (action == read)
 		{
@@ -84,15 +84,15 @@ void Client::ActionRead()
 	}
 
 	char c;
-	printf("Enter any char to complete operation");
-	scanf_s("%c", &c);
+	printf("Enter any char to complete operation ");
+	std::cin >> c;
 }
 
 void Client::ActionModify()
 {
 	int number;
 
-	printf("Enter emloyee's number to read record: ");
+	printf("Enter emloyee's number to modify record: ");
 	scanf_s("%d", &number);
 
 	WriteFile(pipe_to_server, &modify, sizeof(modify), &some_buffer, nullptr);
@@ -121,15 +121,15 @@ void Client::ActionModify()
 	}
 
 	char c;
-	printf("Enter any char to complete operation");
-	scanf_s("%c", &c);
+	printf("Enter any char to complete operation ");
+	std::cin >> c;
 }
 
 void Client::ActionEnd()
 {
 	char c;
-	printf("Enter any char to exit program");
-	scanf_s("%c", &c);
+	printf("Enter any char to exit program ");
+	std::cin >> c;
 
 	WriteFile(pipe_to_server, &end, sizeof(end), &some_buffer, nullptr);
 	SetEvent(send_data);

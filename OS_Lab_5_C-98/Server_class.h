@@ -19,16 +19,21 @@ constexpr int PipeBufferSize = 256;
 
 constexpr char read = 'r';
 constexpr char modify = 'm';
+constexpr char file = 'f';
+constexpr char console = 'c';
 
 #pragma warning (disable:4996)
 
-class Manager;
+class Manager; // declaration
+
+// State DP hierarchy:
 class StateAbstract;
-class StateBegin;
-class StateRead;
-class StateModify;
-class StateWrite;
-class StateEnd;
+	class StateBegin;
+	class StateRead;
+	class StateModify;
+		class StateWaitForModifyAccess;
+		class StateWrite;
+	class StateEnd;
 
 class Server
 {
@@ -38,9 +43,9 @@ class Server
 	friend class StateModify;
 	friend class StateWrite;
 	friend class StateEnd;
+	friend class StateWaitForModifyAccess;
 
 	int recordEmount;
-	employee* records;
 	int* record_access;
 
 	FILE* database;
@@ -59,15 +64,19 @@ public:
 
 	~Server();
 
-	bool CreateDataBase(const char* _filename, int _emount);
+	bool CreateDataBase(const char* _filename, int _emount, char mode, LPCSTR input_filename = nullptr);
 
 	bool CreateClients(int _emount);
 
-	int find_by_number(int number) const;
+	int find_by_number(int number);
 
 	void Work();
 
 	void OutputDataBase();
+
+	void InputDataBaseConsole(int _emount);
+
+	void InputDataBaseFile(LPCSTR filename);
 };
 
 class Manager
@@ -78,24 +87,23 @@ class Manager
 	friend class StateModify;
 	friend class StateWrite;
 	friend class StateEnd;
+	friend class StateWaitForModifyAccess;
 
-	HANDLE communication_pipe;
-	LPSTR pipe_name;
-
-	HANDLE clientHasData;
-	LPSTR event_name;
-
+	int clientNumber;
 	_STARTUPINFOA client_StartInf;
 	_PROCESS_INFORMATION client_PrInf;
 	LPSTR command_line;
 	bool works;
 
+	HANDLE communication_pipe;
+	LPSTR pipe_name;
+	DWORD some_buffer;
+
+	HANDLE clientHasData;
+	LPSTR event_name;
+
 	Server* serv;
 	StateAbstract* state;
-
-	OVERLAPPED forReadWrite;
-	DWORD some_buffer;
-	int clientNumber;
 
 public:
 
@@ -114,10 +122,9 @@ class StateAbstract
 {
 protected:
 	Manager* owner;
-	int buffer;
 
 public:
-	explicit StateAbstract(Manager* _m, int _buf = -1): owner(_m), buffer(_buf) {}
+	explicit StateAbstract(Manager* _m): owner(_m) {}
 
 	virtual ~StateAbstract() = default;
 
@@ -148,20 +155,30 @@ public:
 
 class StateModify : public StateAbstract
 {
-
+protected:
+	int buffer;
 public:
-	using StateAbstract::StateAbstract;
+	StateModify(Manager* _m, int index = -1) : StateAbstract(_m), buffer(index) {}
 
-	~StateModify() final = default;
+	~StateModify() override = default;
 
 	void action() override;
 };
 
-class StateWrite : public StateAbstract
+class StateWaitForModifyAccess : public StateModify
 {
-
 public:
-	using StateAbstract::StateAbstract;
+	using StateModify::StateModify;
+
+	~StateWaitForModifyAccess() final = default;
+
+	void action() override;
+};
+
+class StateWrite : public StateModify
+{
+public:
+	using StateModify::StateModify;
 
 	~StateWrite() final = default;
 
@@ -170,7 +187,6 @@ public:
 
 class StateEnd : public StateAbstract
 {
-
 public:
 	using StateAbstract::StateAbstract;
 

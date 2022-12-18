@@ -16,10 +16,48 @@ Server::~Server()
 	delete[] client_managers;
 	delete[] file_name;
 	delete[] record_access;
-	delete[] records;
 }
 
-bool Server::CreateDataBase(const char* _filename, int _emount)
+void Server::InputDataBaseConsole(int _emount)
+{
+	recordEmount = _emount;
+	record_access = new int[recordEmount];
+
+	employee buffer;
+
+	for (int i = 0; i < recordEmount; i++)
+	{
+		buffer.input();
+		buffer.output_file_bin(database);
+
+		record_access[i] = -1;
+	}
+}
+
+void Server::InputDataBaseFile(LPCSTR filename)
+{
+	FILE* input;
+	fopen_s(&input, filename, "r");
+	employee buffer;
+
+	int _emount = 0;
+	fscanf_s(input, "%d", &_emount);
+
+	recordEmount = _emount;
+	record_access = new int[recordEmount];
+
+	for (int i = 0; i < recordEmount; i++)
+	{
+		buffer.input_file_txt(input);
+		buffer.output_file_bin(database);
+
+		record_access[i] = -1;
+	}
+
+	fclose(input);
+}
+
+bool Server::CreateDataBase(const char* _filename, int _emount, char mode, LPCSTR input_filename)
 {
 	file_name = new char[StandartSTRSize];
 	strcpy(file_name, _filename);
@@ -30,23 +68,22 @@ bool Server::CreateDataBase(const char* _filename, int _emount)
 	}
 	else
 	{
-		recordEmount = _emount;
-		records = new employee[recordEmount];
-		record_access = new int[recordEmount];
-
-		for (int i = 0; i < recordEmount; i++)
+		if (mode == console)
 		{
-			records[i].input();
-			records[i].output_file_bin(database);
-
-			record_access[i] = -1;
+			InputDataBaseConsole(_emount);
 		}
-		for (int i = 0; i < recordEmount; i++)
+		else if (mode == file)
 		{
-			records[i].output();
+			InputDataBaseFile(input_filename);
+		}
+		else
+		{
+			fclose(database);
 		}
 
 		fclose(database);
+
+		OutputDataBase();
 
 		return true;
 	}
@@ -68,21 +105,28 @@ bool Server::CreateClients(int _emount)
 	return true;
 }
 
-int Server::find_by_number(int number) const
+int Server::find_by_number(int number)
 {
-	for (int i = 0; i < recordEmount; i++)
+	if (fopen_s(&database, file_name, "rb") == 0)
 	{
-		if (records[i].num == number)
+		employee buf;
+		for (int i = 0; i < recordEmount; i++)
 		{
-			return i;
+			buf.input_file_bin(database); 
+			if (buf.num == number)
+			{
+				return i;
+			}
 		}
+
+		fclose(database);
 	}
 	return -1;
 }
 
 void Server::readRecord(int recordNum, employee& result)
 {
-	if (fopen_s(&database, file_name, "r+b") == 0)
+	if (fopen_s(&database, file_name, "rb") == 0)
 	{
 		fseek(database, recordNum * sizeof(employee), SEEK_SET);
 		fread(&result, sizeof(employee), 1, database);
@@ -98,6 +142,7 @@ void Server::overrideRecord(int recordNum, employee const& newRecord)
 		fwrite(&newRecord, sizeof(employee), 1, database);
 		fclose(database);
 	}
+	// access error
 }
 
 void Server::Work()
@@ -121,7 +166,8 @@ void Server::Work()
 
 void Server::OutputDataBase()
 {
-	if (fopen_s(&database, file_name, "r+b") == 0)
+	printf("Database now: \n");
+	if (fopen_s(&database, file_name, "rb") == 0)
 	{
 		employee buf;
 		for (int i = 0; i < recordEmount; i++)
