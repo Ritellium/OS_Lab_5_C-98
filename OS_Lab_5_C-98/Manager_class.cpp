@@ -104,18 +104,21 @@ void StateBegin::action()
 		if (todo == read)
 		{
 			owner->state = new StateRead(owner);
+			SetEvent(owner->clientHasData);
 			owner->state->action();
 			delete this;
 		}
 		else if(todo == modify)
 		{
 			owner->state = new StateModify(owner);
+			SetEvent(owner->clientHasData);
 			owner->state->action();
 			delete this;
 		}
 		else
 		{
 			owner->state = new StateEnd(owner);
+			SetEvent(owner->clientHasData);
 			owner->state->action();
 			delete this;
 		}
@@ -141,7 +144,6 @@ void StateRead::action()
 		WriteFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, nullptr);
 
 		owner->state = new StateBegin(owner);
-		owner->state->action();
 		delete this;
 	}
 }
