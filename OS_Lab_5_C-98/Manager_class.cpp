@@ -181,6 +181,7 @@ void StateWaitForModifyAccess::action()
 
 		WriteFile(owner->communication_pipe, &to_write, sizeof(to_write), &owner->some_buffer, nullptr);
 		owner->state = new StateWrite(owner, buffer);
+		owner->state->action();
 		delete this;
 	}
 }
@@ -192,8 +193,8 @@ void StateWrite::action()
 		employee buf;
 		ReadFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, nullptr);
 
+		fclose(owner->serv->database);
 		owner->serv->overrideRecord(buffer, buf);
-		std::cout << "record " << buffer << " modified" << std::endl;
 
 		owner->serv->record_access[buffer] = -1;
 

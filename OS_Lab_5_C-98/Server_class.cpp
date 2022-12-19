@@ -62,7 +62,7 @@ bool Server::CreateDataBase(const char* _filename, int _emount, char mode, LPCST
 	file_name = new char[StandartSTRSize];
 	strcpy(file_name, _filename);
 
-	if (fopen_s(&database, _filename, "wb"))
+	if (fopen_s(&database, _filename, "a+b"))
 	{
 		return false;
 	}
@@ -132,6 +132,10 @@ void Server::readRecord(int recordNum, employee& result)
 		fread(&result, sizeof(employee), 1, database);
 		fclose(database);
 	}
+	else
+	{
+		std::cout << "error code " << GetLastError() << std::endl;
+	}
 }
 
 void Server::overrideRecord(int recordNum, employee const& newRecord)
@@ -140,9 +144,13 @@ void Server::overrideRecord(int recordNum, employee const& newRecord)
 	{
 		fseek(database, recordNum * sizeof(employee), SEEK_SET);
 		fwrite(&newRecord, sizeof(employee), 1, database);
+		std::cout << "record " << recordNum << " modified" << std::endl;
 		fclose(database);
 	}
-	// access error
+	else
+	{
+		std::cout << "error code " << GetLastError() << std::endl;
+	}
 }
 
 void Server::Work()
