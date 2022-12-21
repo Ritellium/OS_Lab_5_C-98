@@ -13,6 +13,7 @@ Server::Server() : recordEmount(0), clientEmount(0) {}
 
 Server::~Server()
 {
+	fclose(database);
 	delete[] client_managers;
 	delete[] file_name;
 	delete[] record_access;
@@ -37,24 +38,26 @@ void Server::InputDataBaseConsole(int _emount)
 void Server::InputDataBaseFile(LPCSTR filename)
 {
 	FILE* input;
-	fopen_s(&input, filename, "r");
-	employee buffer;
-
-	int _emount = 0;
-	fscanf_s(input, "%d", &_emount);
-
-	recordEmount = _emount;
-	record_access = new int[recordEmount];
-
-	for (int i = 0; i < recordEmount; i++)
+	if (fopen_s(&input, filename, "r") == 0)
 	{
-		buffer.input_file_txt(input);
-		buffer.output_file_bin(database);
+		employee buffer;
 
-		record_access[i] = -1;
+		int _emount = 0;
+		fscanf_s(input, "%d", &_emount);
+
+		recordEmount = _emount;
+		record_access = new int[recordEmount];
+
+		for (int i = 0; i < recordEmount; i++)
+		{
+			buffer.input_file_txt(input);
+			buffer.output_file_bin(database);
+
+			record_access[i] = -1;
+		}
+
+		fclose(input);
 	}
-
-	fclose(input);
 }
 
 bool Server::CreateDataBase(const char* _filename, int _emount, char mode, LPCSTR input_filename)
@@ -62,7 +65,7 @@ bool Server::CreateDataBase(const char* _filename, int _emount, char mode, LPCST
 	file_name = new char[StandartSTRSize];
 	strcpy(file_name, _filename);
 
-	if (fopen_s(&database, _filename, "a+b"))
+	if (fopen_s(&database, _filename, "w+b"))
 	{
 		return false;
 	}
@@ -78,10 +81,8 @@ bool Server::CreateDataBase(const char* _filename, int _emount, char mode, LPCST
 		}
 		else
 		{
-			fclose(database);
+			return false;
 		}
-
-		fclose(database);
 
 		OutputDataBase();
 
@@ -107,50 +108,31 @@ bool Server::CreateClients(int _emount)
 
 int Server::find_by_number(int number)
 {
-	if (fopen_s(&database, file_name, "rb") == 0)
+	fseek(database, 0, SEEK_SET);
+	employee buf;
+	for (int i = 0; i < recordEmount; i++)
 	{
-		employee buf;
-		for (int i = 0; i < recordEmount; i++)
+		buf.input_file_bin(database);
+		if (buf.num == number)
 		{
-			buf.input_file_bin(database); 
-			if (buf.num == number)
-			{
-				return i;
-			}
+			return i;
 		}
-
-		fclose(database);
 	}
+
 	return -1;
 }
 
 void Server::readRecord(int recordNum, employee& result)
 {
-	if (fopen_s(&database, file_name, "rb") == 0)
-	{
-		fseek(database, recordNum * sizeof(employee), SEEK_SET);
-		fread(&result, sizeof(employee), 1, database);
-		fclose(database);
-	}
-	else
-	{
-		std::cout << "error code " << GetLastError() << std::endl;
-	}
+	fseek(database, recordNum * sizeof(employee), SEEK_SET);
+	fread(&result, sizeof(employee), 1, database);
 }
 
 void Server::overrideRecord(int recordNum, employee const& newRecord)
 {
-	if (fopen_s(&database, file_name, "r+b") == 0)
-	{
-		fseek(database, recordNum * sizeof(employee), SEEK_SET);
-		fwrite(&newRecord, sizeof(employee), 1, database);
-		std::cout << "record " << recordNum << " modified" << std::endl;
-		fclose(database);
-	}
-	else
-	{
-		std::cout << "error code " << GetLastError() << std::endl;
-	}
+	fseek(database, recordNum * sizeof(employee), SEEK_SET);
+	fwrite(&newRecord, sizeof(employee), 1, database);
+	std::cout << "record " << recordNum << " modified" << std::endl;
 }
 
 void Server::Work()
@@ -174,16 +156,12 @@ void Server::Work()
 
 void Server::OutputDataBase()
 {
+	fseek(database, 0, SEEK_SET);
 	printf("Database now: \n");
-	if (fopen_s(&database, file_name, "rb") == 0)
+	employee buf;
+	for (int i = 0; i < recordEmount; i++)
 	{
-		employee buf;
-		for (int i = 0; i < recordEmount; i++)
-		{
-			buf.input_file_bin(database);
-			buf.output();
-		}
-
-		fclose(database);
+		buf.input_file_bin(database);
+		buf.output();
 	}
 }

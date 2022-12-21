@@ -175,7 +175,6 @@ void StateWaitForModifyAccess::action()
 	else if (owner->serv->record_access[buffer] == -1)
 	{
 		owner->serv->record_access[buffer] = buffer;
-
 		employee to_write;
 		owner->serv->readRecord(buffer, to_write);
 
@@ -192,10 +191,7 @@ void StateWrite::action()
 	{
 		employee buf;
 		ReadFile(owner->communication_pipe, &buf, sizeof(buf), &owner->some_buffer, nullptr);
-
-		fclose(owner->serv->database);
 		owner->serv->overrideRecord(buffer, buf);
-
 		owner->serv->record_access[buffer] = -1;
 
 		owner->state = new StateBegin(owner);
