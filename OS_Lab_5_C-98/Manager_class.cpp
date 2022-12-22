@@ -18,12 +18,14 @@ Manager::Manager() : works(false), some_buffer(0)
 
 Manager::~Manager()
 {
-	delete pipe_name;
-	delete event_name;
-	delete command_line;
+	delete[] pipe_name;
+	delete[] event_name;
+	delete[] command_line;
+	delete state;
 	CloseHandle(client_PrInf.hThread);
 	CloseHandle(client_PrInf.hProcess);
 	CloseHandle(communication_pipe);
+	CloseHandle(clientHasData);
 }
 
 bool Manager::create(int number, Server* st)
@@ -123,8 +125,6 @@ void StateBegin::action()
 			delete this;
 		}
 	}
-
-	int error = GetLastError(); // invalid HANDLE
 }
 
 void StateRead::action()
